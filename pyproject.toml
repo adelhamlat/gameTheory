@@ -1,0 +1,18 @@
+[project]
+name = "gametheory-solver-symbolic"
+version = "0.3.0"
+requires-python = ">=3.10"
+dependencies = [
+  "sympy>=1.12",
+  "scipy>=1.11",
+  "numpy>=1.24",
+  "pandas>=2.2",
+  "streamlit>=1.33",
+  "matplotlib>=3.8",
+  "pytest>=8.0",
+  "protobuf==3.20.3",
+  "pydantic>=1.10,<2",
+  "streamlit-pydantic==0.6.0",
+  "streamlit-ace>=0.1.1",
+  "streamlit-aggrid>=0.3.4"
+]

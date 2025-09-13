@@ -1,0 +1,10 @@
+
+{
+  "players": [
+    {"name": "A", "vars": ["q1"], "utility": "(a - b*(q1+q2) - c1)*q1"},
+    {"name": "B", "vars": ["q2"], "utility": "(a - b*(q1+q2) - c2)*q2"}
+  ],
+  "parameters": [{"name": "a"},{"name": "b"},{"name": "c1"},{"name": "c2"}],
+  "constraints": [],
+  "stages": [{"players": ["A","B"]}]
+}

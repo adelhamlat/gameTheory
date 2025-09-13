@@ -1,0 +1,10 @@
+
+{
+  "players": [
+    {"name": "Leader", "vars": ["qL"], "utility": "(a - b*(qL+qF) - cL)*qL"},
+    {"name": "Follower", "vars": ["qF"], "utility": "(a - b*(qL+qF) - cF)*qF"}
+  ],
+  "parameters": [{"name": "a"},{"name": "b"},{"name": "cL"},{"name": "cF"}],
+  "constraints": [],
+  "stages": [{"players": ["Leader"]},{"players": ["Follower"]}]
+}
