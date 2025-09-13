@@ -570,6 +570,6 @@ with right:
 
     # Placeholder if nothing shown yet
     if not showed_anything:
-        st.markdown("<div class='placeholder'>Results… Run an analyticial solve or a numeric simulation.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='placeholder'>Results… Solve analytically or run a numeric simulation.</div>", unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
