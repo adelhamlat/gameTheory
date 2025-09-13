@@ -97,7 +97,7 @@ div[aria-live="polite"]:empty {
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 class='app-title'> \n Game Theory Solver </h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='app-title'> \n Game Theory Model Solver </h1>", unsafe_allow_html=True)
 
 # -------------------- Session state --------------------
 def init_state():
