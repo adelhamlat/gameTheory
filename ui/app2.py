@@ -338,7 +338,7 @@ with left:
     # Primary actions
     act_l, act_r = st.columns(2)
     with act_l:
-        solve_clicked = st.button("⚙️ Solve (symbolic)", key="solve_btn", use_container_width=True)
+        solve_clicked = st.button("⚙️ Solve ", key="solve_btn", use_container_width=True)
     with act_r:
         sim_clicked   = st.button("📈 Simulation (numeric)", key="sim_btn", use_container_width=True)
     if sim_clicked:
