@@ -1,6 +1,6 @@
 import os, sys
 from typing import Dict, List, Set, Tuple, Optional
-import copy
+import re
 
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _REPO_ROOT not in sys.path:
@@ -18,6 +18,14 @@ from gametheory_symbolic.solvers.simulate_numeric import param_sweep_1d
 
 # -------------------- Page & Styles --------------------
 st.set_page_config(page_title="Game Theory Model Solver ", layout="wide")
+
+RESERVED_NAMES = {
+    # Noms Sympy qui causent souvent des collisions si on ne les force pas en Symbol
+    "beta", "gamma", "zeta", "eta", "theta", "lambda", "Lambda",
+    "mu", "nu", "pi", "Pi", "E", "I", "O", "DiracDelta"
+}
+
+IDENT_RE = re.compile(r"[A-Za-z_]\w*")
 
 st.markdown("""
 <style>
@@ -97,7 +105,7 @@ div[aria-live="polite"]:empty {
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 class='app-title'> \n Game Theory Model Solver </h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='app-title'>🎯 GameTheory Solver — Symbolic-first</h1>", unsafe_allow_html=True)
 
 # -------------------- Session state --------------------
 def init_state():
@@ -151,7 +159,7 @@ def rename_player(old: str, new: str):
     st.session_state.stages = [[(new if x == old else x) for x in stage] for stage in st.session_state.stages]
     st.session_state.player_order = [new if x == old else x for x in st.session_state.player_order]
 
-def infer_parameters_from_utilities(players: Dict[str, Dict]) -> List[str]:
+""" def infer_parameters_from_utilities(players: Dict[str, Dict]) -> List[str]:
     all_vars: Set[str] = set()
     for pdata in players.values():
         all_vars |= set(pdata.get("vars", []))
@@ -166,6 +174,50 @@ def infer_parameters_from_utilities(players: Dict[str, Dict]) -> List[str]:
                 if s.name not in all_vars: params.add(s.name)
         except Exception:
             pass
+    return sorted(params) """
+
+
+
+def infer_parameters_from_utilities(players: Dict[str, Dict]) -> List[str]:
+    # 1) toutes les variables déclarées
+    var_set: Set[str] = set()
+    for pdata in players.values():
+        var_set |= set(pdata.get("vars", []))
+
+    # 2) scan lexical de tous les identifiants présents dans les utilités
+    all_names: Set[str] = set()
+    for pdata in players.values():
+        txt = (pdata.get("utility", "") or "")
+        for name in IDENT_RE.findall(txt):
+            all_names.add(name)
+
+    # 3) candidats = noms vus - variables (les autres seront des paramètres)
+    candidates = sorted(n for n in all_names if n not in var_set)
+
+    # 4) construire un locals_map sûr qui force chaque nom à être un Symbol
+    safe_locals = {v: sp.Symbol(v, real=True) for v in var_set}
+    for n in candidates:
+        # force aussi les noms "piégés" en Symbol
+        if (n in RESERVED_NAMES) or (n not in safe_locals):
+            safe_locals[n] = sp.Symbol(n, real=True)
+
+    # 5) tenter de sympify pour confirmer (facultatif mais utile)
+    params: Set[str] = set()
+    for pdata in players.values():
+        txt = (pdata.get("utility", "") or "").strip()
+        if not txt:
+            continue
+        try:
+            expr = sp.sympify(txt, locals=safe_locals)
+            for s in expr.free_symbols:
+                if s.name not in var_set:
+                    params.add(s.name)
+        except Exception:
+            # Si ça échoue quand même, fallback lexical :
+            for n in IDENT_RE.findall(txt):
+                if n not in var_set:
+                    params.add(n)
+
     return sorted(params)
 
 def collect_all_variables(players: Dict[str, Dict]) -> List[str]:
@@ -338,7 +390,7 @@ with left:
     # Primary actions
     act_l, act_r = st.columns(2)
     with act_l:
-        solve_clicked = st.button("⚙️ Solve ", key="solve_btn", use_container_width=True)
+        solve_clicked = st.button("⚙️ Solve (symbolic)", key="solve_btn", use_container_width=True)
     with act_r:
         sim_clicked   = st.button("📈 Simulation (numeric)", key="sim_btn", use_container_width=True)
     if sim_clicked:
@@ -570,6 +622,6 @@ with right:
 
     # Placeholder if nothing shown yet
     if not showed_anything:
-        st.markdown("<div class='placeholder'>Results… Solve analytically or run a numeric simulation.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='placeholder'>Results… Run a symbolic solve or a numeric simulation.</div>", unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
