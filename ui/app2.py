@@ -162,6 +162,7 @@ def rename_player(old: str, new: str):
 
 
 
+
 def infer_parameters_from_utilities(players: Dict[str, Dict]) -> List[str]:
     # 1) toutes les variables déclarées
     var_set: Set[str] = set()
