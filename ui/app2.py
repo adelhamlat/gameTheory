@@ -159,22 +159,6 @@ def rename_player(old: str, new: str):
     st.session_state.stages = [[(new if x == old else x) for x in stage] for stage in st.session_state.stages]
     st.session_state.player_order = [new if x == old else x for x in st.session_state.player_order]
 
-""" def infer_parameters_from_utilities(players: Dict[str, Dict]) -> List[str]:
-    all_vars: Set[str] = set()
-    for pdata in players.values():
-        all_vars |= set(pdata.get("vars", []))
-    locals_map = {vn: sp.Symbol(vn, real=True) for vn in all_vars}
-    params: Set[str] = set()
-    for pdata in players.values():
-        util_txt = (pdata.get("utility", "") or "").strip()
-        if not util_txt: continue
-        try:
-            expr = sp.sympify(util_txt, locals=locals_map)
-            for s in expr.free_symbols:
-                if s.name not in all_vars: params.add(s.name)
-        except Exception:
-            pass
-    return sorted(params) """
 
 
 
