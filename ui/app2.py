@@ -1,6 +1,7 @@
 import os, sys
 from typing import Dict, List, Set, Tuple, Optional
 import re
+import html
 
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _REPO_ROOT not in sys.path:
@@ -27,8 +28,32 @@ RESERVED_NAMES = {
 
 IDENT_RE = re.compile(r"[A-Za-z_]\w*")
 
-st.markdown("""
+ZERO_WIDTH_SPACE = "\u200b"
+BREAK_AFTER = re.compile(r'([+\-*/^=,:])')   # break after math ops & commas
+BREAK_PAREN = re.compile(r'([()])')          # surround parentheses
+
+def make_wrappable(s: str) -> str:
+    # insert ZWSP after operators and around parentheses using callable repls
+    s = BREAK_AFTER.sub(lambda m: m.group(1) + ZERO_WIDTH_SPACE, s)
+    s = BREAK_PAREN.sub(lambda m: ZERO_WIDTH_SPACE + m.group(1) + ZERO_WIDTH_SPACE, s)
+    return s
+
+def render_result_block(title: str, lines: list[str]):
+    wrapped = [make_wrappable(line) for line in lines]
+    text = html.escape("\n".join(wrapped))
+    st.markdown(
+        f"<div class='result'><h4>{html.escape(title)}</h4><pre>{text}</pre></div>",
+        unsafe_allow_html=True
+    )
+
+st.markdown("""         
 <style>
+.result pre {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    max-width: 100%;
+}
 :root {
   --bg:#ffffff; --fg:#0f172a; --muted:#64748b; --line:#e5e7eb;
   --card:#ffffff; --cardBorder:#e5e7eb;
@@ -446,8 +471,8 @@ with right:
                     else:
                         lines.append("  —")
                     lines.append("")
-                st.markdown("<div class='result'><h4>Solutions</h4><pre>" + "\n".join(lines) + "</pre></div>", unsafe_allow_html=True)
-
+                #st.markdown("<div class='result'><h4>Solutions</h4><pre>" + "\n".join(lines) + "</pre></div>", unsafe_allow_html=True)
+                render_result_block("Solutions", lines)
                 # 2) Second-order derivatives (SOC) block (kept)
                 soc_lines = []
                 for player, values in soc.items():
@@ -455,8 +480,8 @@ with right:
                     for var, expr in values.items():
                         soc_lines.append(f"  d²U/d{var}² -> {expr}")
                     soc_lines.append("")
-                st.markdown("<div class='result'><h4>Second derivatives (should be negative at optimum)</h4><pre>" + "\n".join(soc_lines) + "</pre></div>", unsafe_allow_html=True)
-
+                #st.markdown("<div class='result'><h4>Second derivatives (should be negative at optimum)</h4><pre>" + "\n".join(soc_lines) + "</pre></div>", unsafe_allow_html=True)
+                render_result_block("Second derivatives (should be negative at optimum)", soc_lines)
                 # NOTE: Constraints block intentionally removed from results (per request)
 
             else:
@@ -484,14 +509,14 @@ with right:
                     else:
                         lines.append("  —")
                     lines.append("")
-                st.markdown("<div class='result'><h4>Solutions</h4><pre>" + "\n".join(lines) + "</pre></div>", unsafe_allow_html=True)
-
+                #st.markdown("<div class='result'><h4>Solutions</h4><pre>" + "\n".join(lines) + "</pre></div>", unsafe_allow_html=True)
+                render_result_block("Solutions", lines)
                 # 2) Utilities block (kept)
                 util_text = []
                 for k, v in out["utilities"].items():
                     util_text.append(f"{k} = {v}")
-                st.markdown("<div class='result'><h4>Utilities</h4><pre>" + "\n".join(util_text) + "</pre></div>", unsafe_allow_html=True)
-
+                #st.markdown("<div class='result'><h4>Utilities</h4><pre>" + "\n".join(util_text) + "</pre></div>", unsafe_allow_html=True)
+                render_result_block("Utilities", util_text)
                 # NOTE: Constraints block intentionally removed
 
         except ModelValidationError as e:
