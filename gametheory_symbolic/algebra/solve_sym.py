@@ -7,7 +7,7 @@ def try_solve_symbolic(eqs: Sequence[sp.Eq], vars_syms: Sequence[sp.Symbol]) -> 
     try:
         sol = sp.solve(list(eqs), list(vars_syms), dict=True)
         if isinstance(sol, list) and sol:
-            return {k: sp.simplify(v) for k,v in sol[len(sol)-1].items()}
+            return {k: sp.simplify(v) for k,v in sol[-1].items()}
     except Exception:
         pass
     try:
