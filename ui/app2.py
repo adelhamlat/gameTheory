@@ -130,7 +130,7 @@ div[aria-live="polite"]:empty {
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 class='app-title'> \nGame Theory  Model Solver</h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='app-title'>🎯 GameTheory Solver — Symbolic-first</h1>", unsafe_allow_html=True)
 
 # -------------------- Session state --------------------
 def init_state():
@@ -428,8 +428,9 @@ with right:
     if 'solve_clicked' in locals() and solve_clicked:
         showed_anything = True
         try:
-            spec = build_spec()
+            spec = build_spec() 
             gm = build_model(spec)
+        
             st.session_state.last_error = ""
 
             var_names = collect_all_variables(st.session_state.players)
@@ -532,7 +533,8 @@ with right:
     if st.session_state.sim_open:
         showed_anything = True
         try:
-            spec = build_spec(); gm = build_model(spec)
+            spec = build_spec()
+            gm = build_model(spec)
             param_names = [p["name"] for p in spec["parameters"]]
 
             col_header_l, col_header_r = st.columns([3,1])
