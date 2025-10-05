@@ -6,6 +6,8 @@ import sympy as sp
 def try_solve_symbolic(eqs: Sequence[sp.Eq], vars_syms: Sequence[sp.Symbol]) -> Optional[Dict[sp.Symbol, sp.Expr]]:
     try:
         sol = sp.solve(list(eqs), list(vars_syms), dict=True)
+        print(sol)
+        print('-------XXXXXX---------')
         if isinstance(sol, list) and sol:
             return {k: sp.simplify(v) for k,v in sol[-1].items()}
     except Exception:
