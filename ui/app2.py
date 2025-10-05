@@ -428,7 +428,9 @@ with right:
     if 'solve_clicked' in locals() and solve_clicked:
         showed_anything = True
         try:
-            spec = build_spec(); gm = build_model(spec); st.session_state.last_error = ""
+            spec = build_spec()
+            gm = build_model(spec)
+            st.session_state.last_error = ""
 
             var_names = collect_all_variables(st.session_state.players)
             par_names = [p["name"] for p in spec["parameters"]]
