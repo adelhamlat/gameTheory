@@ -130,7 +130,7 @@ div[aria-live="polite"]:empty {
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 class='app-title'>🎯 GameTheory Solver — Symbolic-first</h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='app-title'>GameTheory Solver — Symbolic-first</h1>", unsafe_allow_html=True)
 
 # -------------------- Session state --------------------
 def init_state():
