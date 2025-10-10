@@ -23,11 +23,11 @@ from gametheory_symbolic.solvers.partial_symbolic import (
     PartialStageResult,
     sequential_backward_partial,
 )
-
+from gametheory_symbolic.mathpix_ocr import ocr_image_file, extract_single_equation
 # =========================
 # --------- THEME / CSS ----
 # =========================
-st.set_page_config(page_title="Game Theory Model Solver", page_icon="⚙️", layout="wide")
+st.set_page_config(page_title="Game Theory Model Solver", page_icon="🎯", layout="wide")
 
 st.markdown("""
 <style>
@@ -467,10 +467,74 @@ with left:
         pdata["vars_line"] = vars_line
         pdata["vars"] = normalize_vars_line(vars_line)
 
-        pdata["utility"] = st.text_area("Utility function", value=pdata.get("utility", ""),
-                                        key=f"util_{pname}", height=100,
-                                        placeholder="e.g., (a - b*(q1+q2) - c1)*q1",
-                                        label_visibility="visible")
+        # ---- En-tête: "Utility function" + bouton OCR à droite ----
+        u_hdr, u_btn = st.columns([6, 1])
+        with u_hdr:
+            st.markdown("**Utility function**")
+        with u_btn:
+            # Un bouton compact qui ouvre un file_uploader (via un flag de session)
+            if st.button("📷 OCR", key=f"ocr_btn_{pname}", help="Import from image"):
+                st.session_state[f"ocr_open_{pname}"] = True
+
+        # Zone d'édition (toujours visible)
+        pdata["utility"] = st.text_area(
+            label="Utility function (value)",
+            value=pdata.get("utility", ""),
+            key=f"util_{pname}",
+            height=100,
+            placeholder="e.g., (a - b*(q1+q2) - c1)*q1",
+            label_visibility="collapsed"  # on a déjà l'en-tête au-dessus
+        )
+
+        # Si l'utilisateur a cliqué sur OCR : on affiche un uploader minimal
+        if st.session_state.get(f"ocr_open_{pname}", False):
+            import tempfile, os
+
+            uploader = st.file_uploader(
+                "Choose an image (PNG/JPG/BMP/TIFF/PDF)",
+                type=["png", "jpg", "jpeg", "bmp", "tiff", "pdf"],
+                key=f"ocr_upl_{pname}"
+            )
+
+            cols_ocr = st.columns([1,1,3])
+            with cols_ocr[0]:
+                replace_current = st.checkbox("Replace", value=True, key=f"ocr_replace_{pname}")
+            with cols_ocr[1]:
+                close_ocr = st.button("Close", key=f"ocr_close_{pname}")
+
+            if close_ocr:
+                st.session_state[f"ocr_open_{pname}"] = False
+                st.rerun()
+
+            # Quand un fichier est fourni, on lance l’OCR et on insère UNE équation
+            if uploader is not None:
+                # Écrire dans un fichier temporaire pour réutiliser ocr_image_file(path)
+                suffix = os.path.splitext(uploader.name)[1] or ".png"
+                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                    tmp.write(uploader.read())
+                    tmp.flush()
+                    tmp_path = tmp.name
+
+                try:
+                    resp = ocr_image_file(tmp_path)
+                    eq = extract_single_equation(resp)
+                    if not eq:
+                        st.warning("No valid equation detected in the OCR result.")
+                    else:
+                        if replace_current:
+                            st.session_state.players[pname]["utility"] = eq
+                        else:
+                            prev = st.session_state.players[pname].get("utility", "")
+                            st.session_state.players[pname]["utility"] = (prev + ("\n" if prev else "") + eq).strip()
+                        st.success("Equation inserted from OCR.")
+                        # On referme l'uploader pour cette carte joueur et on recharge
+                        st.session_state[f"ocr_open_{pname}"] = False
+                        st.rerun()
+                finally:
+                    try:
+                        os.remove(tmp_path)
+                    except Exception:
+                        pass
 
         st.markdown("</div>", unsafe_allow_html=True)  # /player-card
 
