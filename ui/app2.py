@@ -136,8 +136,8 @@ st.markdown("<h1 class='app-title'>GameTheory Solver — Symbolic-first</h1>", u
 def init_state():
     if "players" not in st.session_state:
         st.session_state.players = {
-            "A": {"vars_line":"q1", "vars":["q1"], "utility":"(a - b*(q1+q2) - c1)*q1"},
-            "B": {"vars_line":"q2", "vars":["q2"], "utility":"(a - b*(q1+q2) - c2)*q2"},
+            "Pop1": {"vars_line":"e_t", "vars":["e_t"], "utility":"-k_e_t * e_t + ((1 + alpha*e_t) * t) / ((1 + alpha*e_t) * t + T) * P_TG"},
+            "Pop2": {"vars_line":"e_x", "vars":["e_x"], "utility":"-k_e_x * e_x + (((1 + beta*e_x) * x) / ((1 + beta*e_x) * x + X)) * P_x "},
         }
     if "player_order" not in st.session_state:
         st.session_state.player_order = list(st.session_state.players.keys())
