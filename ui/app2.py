@@ -27,7 +27,7 @@ from gametheory_symbolic.solvers.partial_symbolic import (
 # =========================
 # --------- THEME / CSS ----
 # =========================
-st.set_page_config(page_title="Game Theory Model Solver", page_icon="🎯", layout="wide")
+st.set_page_config(page_title="Game Theory Model Solver", page_icon="⚙️", layout="wide")
 
 st.markdown("""
 <style>
@@ -119,7 +119,7 @@ div[aria-live="polite"]:empty { display:none !important; height:0 !important; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 class='app-title'>Game-Theory Model Solver — Symbolic-first</h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='app-title'>Game-Theory Model Solver </h1>", unsafe_allow_html=True)
 
 # =========================
 # ------ STATE INIT -------
