@@ -15,7 +15,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import sympy as sp
-
+import tempfile
 # Core + solvers
 from gametheory_symbolic.core.model import build_model, ModelValidationError
 from gametheory_symbolic.solvers.simulate_numeric import param_sweep_1d
@@ -504,8 +504,6 @@ with left:
         
         # Si l'utilisateur a cliqué sur OCR : uploader minimal
         if st.session_state.get(f"ocr_open_{pname}", False):
-            import tempfile, os
-            from mathpix_ocr import ocr_image_file, extract_single_equation  # assure-toi que l'import est dispo
         
             uploader = st.file_uploader(
                 "Choose an image (PNG/JPG/BMP/TIFF/PDF)",
