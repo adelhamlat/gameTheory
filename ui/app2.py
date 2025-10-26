@@ -472,16 +472,14 @@ with left:
         with u_hdr:
             st.markdown("**Utility function**")
         with u_btn:
-            # Un bouton compact qui ouvre un file_uploader (via un flag de session)
             if st.button("📷 OCR", key=f"ocr_btn_{pname}", help="Import from image"):
                 st.session_state[f"ocr_open_{pname}"] = True
-
-        # Zone d'édition (toujours visible)
-        # --- Keys par joueur
-        util_key  = f"util_{pname}"
-        force_key = f"util_force_load_{pname}"  # drapeau: recharger depuis modèle après OCR
         
-        # 1) Initialiser le widget la première fois
+        # --- Clés par joueur
+        util_key  = f"util_{pname}"
+        force_key = f"util_force_load_{pname}"  # recharger depuis le modèle après OCR (une seule fois)
+        
+        # 1) Initialiser la valeur du widget à partir du modèle la toute première fois
         if util_key not in st.session_state:
             st.session_state[util_key] = pdata.get("utility", "")
         
@@ -489,14 +487,6 @@ with left:
         elif st.session_state.get(force_key, False):
             st.session_state[util_key] = pdata.get("utility", "")
             st.session_state[force_key] = False  # on a consommé le reload
-        
-        # ---- En-tête + bouton OCR
-        u_hdr, u_btn = st.columns([6, 1])
-        with u_hdr:
-            st.markdown("**Utility function**")
-        with u_btn:
-            if st.button("📷 OCR", key=f"ocr_btn_{pname}", help="Import from image"):
-                st.session_state[f"ocr_open_{pname}"] = True
         
         # Zone d’édition liée à util_key (pas de 'value=')
         pdata["utility"] = st.text_area(
@@ -507,58 +497,36 @@ with left:
             label_visibility="visible"
         )
         
-        # Propager l’édition utilisateur vers le modèle
+        # Propager l’édition utilisateur vers le modèle (et seulement si ça change)
         new_val = st.session_state[util_key]
         if new_val != st.session_state.players[pname].get("utility", ""):
             st.session_state.players[pname]["utility"] = new_val
-            
-        #pdata["utility"] = st.text_area(
-            #label="Utility function (value)",
-            #value=pdata.get("utility", ""),
-            #key=f"util_{pname}",
-            #height=100,
-            #placeholder="e.g., (a - b*(q1+q2) - c1)*q1",
-            #label_visibility="collapsed"  # on a déjà l'en-tête au-dessus
-        #)
-
-        pdata["utility"] = st.text_area(
-            "Utility function",
-            key=util_key,
-            height=100,
-            placeholder="e.g., (a - b*(q1+q2) - c1)*q1",
-            label_visibility="visible"
-        )
-        st.session_state.players[pname]["utility"] = st.session_state[util_key]
         
-        # Si l'utilisateur a cliqué sur OCR : on affiche un uploader minimal
+        # Si l'utilisateur a cliqué sur OCR : uploader minimal
         if st.session_state.get(f"ocr_open_{pname}", False):
             import tempfile, os
-
+            from mathpix_ocr import ocr_image_file, extract_single_equation  # assure-toi que l'import est dispo
+        
             uploader = st.file_uploader(
                 "Choose an image (PNG/JPG/BMP/TIFF/PDF)",
                 type=["png", "jpg", "jpeg", "bmp", "tiff", "pdf"],
                 key=f"ocr_upl_{pname}"
             )
-
-            cols_ocr = st.columns([1,1,3])
+        
+            cols_ocr = st.columns([1, 1, 3])
             with cols_ocr[0]:
                 replace_current = st.checkbox("Replace", value=True, key=f"ocr_replace_{pname}")
             with cols_ocr[1]:
-                close_ocr = st.button("Close", key=f"ocr_close_{pname}")
-
-            if close_ocr:
-                st.session_state[f"ocr_open_{pname}"] = False
-                st.rerun()
-
-            # Quand un fichier est fourni, on lance l’OCR et on insère UNE équation
+                if st.button("Close", key=f"ocr_close_{pname}"):
+                    st.session_state[f"ocr_open_{pname}"] = False
+                    st.rerun()
+        
             if uploader is not None:
-                # Écrire dans un fichier temporaire pour réutiliser ocr_image_file(path)
                 suffix = os.path.splitext(uploader.name)[1] or ".png"
                 with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
                     tmp.write(uploader.read())
                     tmp.flush()
                     tmp_path = tmp.name
-
                 try:
                     resp = ocr_image_file(tmp_path)
                     eq = extract_single_equation(resp)
@@ -570,10 +538,11 @@ with left:
                         else:
                             prev = st.session_state.players[pname].get("utility", "")
                             new_text = (prev + ("\n" if prev else "") + eq).strip()
-                        # ✅ Update BOTH the model and the widget state:
+        
+                        # Mettre à jour le modèle, puis demander au widget de se recharger UNE fois
                         st.session_state.players[pname]["utility"] = new_text
-                        st.session_state[f"util_force_load_{pname}"] = True
-                        
+                        st.session_state[force_key] = True
+        
                         st.success("Equation inserted from OCR.")
                         st.session_state[f"ocr_open_{pname}"] = False
                         st.rerun()
@@ -582,8 +551,6 @@ with left:
                         os.remove(tmp_path)
                     except Exception:
                         pass
-
-        st.markdown("</div>", unsafe_allow_html=True)  # /player-card
 
     # Add player (bottom)
     if st.button("➕ Add player", key="add_player_btn_bottom", use_container_width=True):
