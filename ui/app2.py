@@ -522,12 +522,15 @@ with left:
                         st.warning("No valid equation detected in the OCR result.")
                     else:
                         if replace_current:
-                            st.session_state.players[pname]["utility"] = eq
+                            new_text = eq
                         else:
                             prev = st.session_state.players[pname].get("utility", "")
-                            st.session_state.players[pname]["utility"] = (prev + ("\n" if prev else "") + eq).strip()
+                            new_text = (prev + ("\n" if prev else "") + eq).strip()
+                        # ✅ Update BOTH the model and the widget state:
+                        st.session_state.players[pname]["utility"] = new_text
+                        st.session_state[f"util_{pname}"] = new_text
+                    
                         st.success("Equation inserted from OCR.")
-                        # On referme l'uploader pour cette carte joueur et on recharge
                         st.session_state[f"ocr_open_{pname}"] = False
                         st.rerun()
                 finally:
