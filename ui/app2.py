@@ -477,15 +477,40 @@ with left:
                 st.session_state[f"ocr_open_{pname}"] = True
 
         # Zone d'édition (toujours visible)
-        util_key = f"util_{pname}"
-        model_util = pdata.get("utility", "")
+        # --- Keys par joueur
+        util_key  = f"util_{pname}"
+        force_key = f"util_force_load_{pname}"  # drapeau: recharger depuis modèle après OCR
         
-        # 1) Init the widget key if missing
+        # 1) Initialiser le widget la première fois
         if util_key not in st.session_state:
-            st.session_state[util_key] = model_util
-        # 2) If model changed (e.g., after OCR), refresh the widget value
-        elif st.session_state[util_key] != model_util:
-            st.session_state[util_key] = model_util
+            st.session_state[util_key] = pdata.get("utility", "")
+        
+        # 2) Recharger depuis le modèle UNIQUEMENT si un OCR vient d'arriver
+        elif st.session_state.get(force_key, False):
+            st.session_state[util_key] = pdata.get("utility", "")
+            st.session_state[force_key] = False  # on a consommé le reload
+        
+        # ---- En-tête + bouton OCR
+        u_hdr, u_btn = st.columns([6, 1])
+        with u_hdr:
+            st.markdown("**Utility function**")
+        with u_btn:
+            if st.button("📷 OCR", key=f"ocr_btn_{pname}", help="Import from image"):
+                st.session_state[f"ocr_open_{pname}"] = True
+        
+        # Zone d’édition liée à util_key (pas de 'value=')
+        pdata["utility"] = st.text_area(
+            "Utility function",
+            key=util_key,
+            height=100,
+            placeholder="e.g., (a - b*(q1+q2) - c1)*q1",
+            label_visibility="visible"
+        )
+        
+        # Propager l’édition utilisateur vers le modèle
+        new_val = st.session_state[util_key]
+        if new_val != st.session_state.players[pname].get("utility", ""):
+            st.session_state.players[pname]["utility"] = new_val
             
         #pdata["utility"] = st.text_area(
             #label="Utility function (value)",
@@ -547,6 +572,8 @@ with left:
                             new_text = (prev + ("\n" if prev else "") + eq).strip()
                         # ✅ Update BOTH the model and the widget state:
                         st.session_state.players[pname]["utility"] = new_text
+                        st.session_state[f"util_force_load_{pname}"] = True
+                        
                         st.success("Equation inserted from OCR.")
                         st.session_state[f"ocr_open_{pname}"] = False
                         st.rerun()
