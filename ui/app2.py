@@ -477,15 +477,34 @@ with left:
                 st.session_state[f"ocr_open_{pname}"] = True
 
         # Zone d'édition (toujours visible)
+        util_key = f"util_{pname}"
+        model_util = pdata.get("utility", "")
+        
+        # 1) Init the widget key if missing
+        if util_key not in st.session_state:
+            st.session_state[util_key] = model_util
+        # 2) If model changed (e.g., after OCR), refresh the widget value
+        elif st.session_state[util_key] != model_util:
+            st.session_state[util_key] = model_util
+            
+        #pdata["utility"] = st.text_area(
+            #label="Utility function (value)",
+            #value=pdata.get("utility", ""),
+            #key=f"util_{pname}",
+            #height=100,
+            #placeholder="e.g., (a - b*(q1+q2) - c1)*q1",
+            #label_visibility="collapsed"  # on a déjà l'en-tête au-dessus
+        #)
+
         pdata["utility"] = st.text_area(
-            label="Utility function (value)",
-            value=pdata.get("utility", ""),
-            key=f"util_{pname}",
+            "Utility function",
+            key=util_key,
             height=100,
             placeholder="e.g., (a - b*(q1+q2) - c1)*q1",
-            label_visibility="collapsed"  # on a déjà l'en-tête au-dessus
+            label_visibility="visible"
         )
-
+        st.session_state.players[pname]["utility"] = st.session_state[util_key]
+        
         # Si l'utilisateur a cliqué sur OCR : on affiche un uploader minimal
         if st.session_state.get(f"ocr_open_{pname}", False):
             import tempfile, os
@@ -528,8 +547,6 @@ with left:
                             new_text = (prev + ("\n" if prev else "") + eq).strip()
                         # ✅ Update BOTH the model and the widget state:
                         st.session_state.players[pname]["utility"] = new_text
-                        st.session_state[f"util_{pname}"] = new_text
-                    
                         st.success("Equation inserted from OCR.")
                         st.session_state[f"ocr_open_{pname}"] = False
                         st.rerun()
