@@ -263,6 +263,64 @@ def render_result_block(title: str, lines: List[str]):
         f"<div class='result'><h4>{html.escape(title)}</h4><pre>{text}</pre></div>",
         unsafe_allow_html=True
     )
+# =========================
+# ------- LATEX HELP -------
+# =========================
+def _to_latex_name(x: Any) -> str:
+    """Retourne un nom latex pour un symbole/chaîne (ex: sp.Symbol('e_t') -> e_{t})."""
+    if isinstance(x, sp.Symbol):
+        s = x.name
+    else:
+        s = str(x)
+    # remplacer x_y par x_{y} pour une lecture plus propre
+    if "_" in s and not s.startswith(r"\"):
+        head, tail = s.split("_", 1)
+        return rf"{head}_{{{tail}}}"
+    return s
+
+def latex_aligned_equations(pairs: list[tuple[Any, sp.Expr]]) -> str:
+    r"""
+    Construit un bloc LaTeX:
+    \begin{aligned}
+      var_1 &= expr_1 \\
+      var_2 &= expr_2 \\
+      ... 
+    \end{aligned}
+    """
+    if not pairs:
+        return r"\text{—}"
+    lines = []
+    for left, right in pairs:
+        ltx_left  = _to_latex_name(left)
+        # simplifier pour éviter des horreurs
+        right_simpl = sp.simplify(right)
+        ltx_right = sp.latex(right_simpl)
+        lines.append(rf"{ltx_left} &= {ltx_right}")
+    body = r" \\ ".join(lines)
+    return r"\begin{aligned}" + body + r"\end{aligned}"
+
+def render_latex_block(title: str, pairs: list[tuple[Any, sp.Expr]]):
+    """Titre + bloc aligned LaTeX."""
+    st.markdown(f"**{title}**")
+    st.latex(latex_aligned_equations(pairs))
+
+def render_latex_list(title: str, exprs: list[sp.Expr | str]):
+    """Pour afficher une liste d’équations ' = 0 ' etc. en aligned."""
+    pairs = []
+    for e in exprs:
+        if isinstance(e, sp.Equality):
+            pairs.append((sp.latex(sp.simplify(e.lhs)), sp.latex(sp.simplify(e.rhs))))
+        else:
+            # si 'e' est une string 'f(x) = 0', on sépare grossièrement
+            s = str(e)
+            if "=" in s:
+                L, R = s.split("=", 1)
+                pairs.append((L.strip(), sp.sympify(R.strip())))
+            else:
+                # sinon juste afficher e = 0
+                pairs.append((s, sp.Integer(0)))
+    render_latex_block(title, pairs)
+
 
 # =========================
 # --- SPEC / STAGES BUILD --
@@ -614,39 +672,46 @@ with right:
             for r in results:
                 st.markdown(f"#### {r.stage_name}")
 
-                # Group closed-form solutions by player
+                # Group closed-form solutions by player (LaTeX)
                 if r.solved:
-                    by_player: Dict[str, List[str]] = {}
+                    by_player_pairs: Dict[str, List[Tuple[Any, sp.Expr]]] = {}
                     for v, expr in r.solved.items():
                         pname = r.var_to_player.get(v, _owner_from_session(v)) if hasattr(r, "var_to_player") else _owner_from_session(v)
-                        line = f"{str(v)} = {sp.simplify(expr)}"
-                        by_player.setdefault(pname, []).append(line)
-                    # stable order: as in spec
+                        by_player_pairs.setdefault(pname, []).append((v, expr))
+                
+                    # Ordre stable: comme dans le spec
                     spec_order = [p["name"] for p in spec["players"]]
+                    shown = set()
                     for pname in spec_order:
-                        lines = by_player.get(pname, [])
-                        if lines:
-                            render_result_block(f"Closed-form solutions — {pname}", lines)
-                    # any other (unlikely)
-                    for pname, lines in by_player.items():
-                        if pname not in spec_order:
-                            render_result_block(f"Closed-form solutions — {pname}", lines)
+                        pairs = by_player_pairs.get(pname, [])
+                        if pairs:
+                            render_latex_block(f"Closed-form solutions — {pname}", pairs)
+                            shown.add(pname)
+                    # Les autres (rare)
+                    for pname, pairs in by_player_pairs.items():
+                        if pname not in shown:
+                            render_latex_block(f"Closed-form solutions — {pname}", pairs)
                 else:
                     st.info("No closed-form solution found for this stage.")
 
                 # FOC still unsolved (implicit)
                 if r.unsolved_eqs:
-                    foc_lines = [str(sp.simplify(eq.lhs)) + " = 0" for eq in r.unsolved_eqs]
-                    render_result_block("Implicit first-order conditions (unsolved)", foc_lines)
+                    foc_pairs = [(sp.simplify(eq.lhs), sp.Integer(0)) for eq in r.unsolved_eqs]
+                    render_latex_block("Implicit first-order conditions (unsolved)", foc_pairs)
 
                 # Second derivatives (concavity check)
-                d2_lines: List[str] = []
+                d2_pairs: Dict[str, List[Tuple[str, sp.Expr]]] = {}
                 for pname, d2map in r.second_derivs.items():
                     for vname, d2 in d2map.items():
-                        d2_lines.append(f"{pname}: d²U/d{vname}² = {sp.simplify(d2)}")
-                if d2_lines:
+                        # Affichage joli: \frac{\partial^2 U_{pname}}{\partial v^2} = d2
+                        v_ltx = _to_latex_name(vname)
+                        left = sp.Symbol(rf"\frac{{\partial^2\, U_{{{_to_latex_name(pname)}}}}}{{\partial {v_ltx}^2}}")
+                        d2_pairs.setdefault(pname, []).append((left, sp.simplify(d2)))
+                
+                if d2_pairs:
                     with st.expander("Second derivatives (concavity check)"):
-                        render_result_block("Second derivatives", d2_lines)
+                        for pname, pairs in d2_pairs.items():
+                            render_latex_block(f"Second derivatives — {pname}", pairs)
 
         except ModelValidationError as e:
             st.session_state.last_error = str(e); st.error(st.session_state.last_error)
