@@ -273,7 +273,7 @@ def _to_latex_name(x: Any) -> str:
     else:
         s = str(x)
     # remplacer x_y par x_{y} pour une lecture plus propre
-    if "_" in s and not s.startswith(r"\"):
+    if "_" in s and not s.startswith(r"\\"):
         head, tail = s.split("_", 1)
         return rf"{head}_{{{tail}}}"
     return s
