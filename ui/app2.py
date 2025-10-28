@@ -128,7 +128,7 @@ def init_state():
     if "players" not in st.session_state:
         # Dict style for easy renaming & ordering
         st.session_state.players: Dict[str, Dict[str, Any]] = {
-            "Gov": {"vars_line":"T X", "vars":["T","X"],
+            "Government": {"vars_line":"T X", "vars":["T","X"],
                     "utility":"-(g_T*(1+alpha*e_t)*t)/((1+alpha*e_t)*t+T) - (g_x*(1+beta*e_x)*x)/((1+beta*e_x)*x+X)"},
             "TG":  {"vars_line":"t x", "vars":["t","x"],
                     "utility":"(mu_t*(1+alpha*e_t)*t)/((1+alpha*e_t)*t+T) + (mu_x*(1+beta*e_x)*x)/((1+beta*e_x)*x+X)"},
@@ -143,7 +143,7 @@ def init_state():
         st.session_state.sequential = True  # default: sequential to match your use-case
     if "stages" not in st.session_state:
         # Default stages: P2 & P3 → TG → Gov
-        st.session_state.stages: List[List[str]] = [["P2","P3"], ["TG"], ["Gov"]]
+        st.session_state.stages: List[List[str]] = [["P2","P3"], ["TG"], ["Government"]]
     if "constraints" not in st.session_state:
         st.session_state.constraints: List[str] = []
     if "sim_open" not in st.session_state:
