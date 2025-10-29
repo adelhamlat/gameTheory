@@ -262,6 +262,19 @@ def render_result_block(title: str, lines: List[str]):
 # =========================
 # ------- LATEX HELP -------
 # =========================
+
+def _latex_var_name(s: str) -> str:
+    """Transforme 'e_t' -> 'e_{t}', sans toucher aux commandes LaTeX déjà protégées."""
+    if "_" in s and not s.startswith(r"\\"):
+        head, tail = s.split("_", 1)
+        return rf"{head}_{{{tail}}}"
+    return s
+
+def latex_expr(e: sp.Expr) -> str:
+    """LaTeX propre pour les expressions SymPy."""
+    return sp.latex(sp.simplify(e), fold_frac_powers=True, mul_symbol='dot')
+
+
 def _to_latex_name(x: Any) -> str:
     """Retourne un nom latex pour un symbole/chaîne (ex: sp.Symbol('e_t') -> e_{t})."""
     if isinstance(x, sp.Symbol):
@@ -696,18 +709,21 @@ with right:
                     render_latex_block("Implicit first-order conditions (unsolved)", foc_pairs)
 
                 # Second derivatives (concavity check)
-                d2_pairs: Dict[str, List[Tuple[str, sp.Expr]]] = {}
-                for pname, d2map in r.second_derivs.items():
-                    for vname, d2 in d2map.items():
-                        # Affichage joli: \frac{\partial^2 U_{pname}}{\partial v^2} = d2
-                        v_ltx = _to_latex_name(vname)
-                        left = sp.Symbol(rf"\frac{{\partial^2\, U_{{{_to_latex_name(pname)}}}}}{{\partial {v_ltx}^2}}")
-                        d2_pairs.setdefault(pname, []).append((left, sp.simplify(d2)))
-                
-                if d2_pairs:
+                # Second derivatives (concavity check) — clean LaTeX
+                has_any_d2 = any(r.second_derivs.get(p, {}) for p in r.second_derivs)
+                if has_any_d2:
                     with st.expander("Second derivatives (concavity check)"):
-                        for pname, pairs in d2_pairs.items():
-                            render_latex_block(f"Second derivatives — {pname}", pairs)
+                        for pname, d2map in r.second_derivs.items():
+                            if not d2map:
+                                continue
+                            st.markdown(f"**{pname}**")
+                            U_tex = rf"U_{{\text{{{pname}}}}}"  # U_{text{Player}}
+                            for vname, d2 in d2map.items():
+                                v_tex = _latex_var_name(vname)   # e_t -> e_{t}
+                                rhs   = latex_expr(d2)           # sympy -> LaTeX
+                                # \frac{\partial^2 U_{\text{Player}}}{\partial v^{2}} = <expr>
+                                line = rf"\displaystyle \frac{{\partial^2 {U_tex}}}{{\partial {v_tex}^{{2}}}} \;=\; {rhs}"
+                                st.latex(line)
 
         except ModelValidationError as e:
             st.session_state.last_error = str(e); st.error(st.session_state.last_error)
