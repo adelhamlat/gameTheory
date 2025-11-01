@@ -304,7 +304,7 @@ def latex_aligned_equations(pairs: list[tuple[Any, sp.Expr]]) -> str:
         # simplifier pour éviter des horreurs
         right_simpl = sp.simplify(right)
         ltx_right = sp.latex(right_simpl)
-        lines.append(rf"{ltx_left} &= {ltx_right}")
+        lines.append(rf"{ltx_left}^* &= {ltx_right}")
     body = r" \\ ".join(lines)
     return r"\begin{aligned}" + body + r"\end{aligned}"
 
